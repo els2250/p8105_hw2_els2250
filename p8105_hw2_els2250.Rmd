@@ -5,45 +5,91 @@ date: "Due: 5 October 2022"
 output: github_document
 ---
 
-```{r, eval = FALSE}
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, message = FALSE)
+```
+
+```{r}
 library(tidyverse)
+library(readxl)
 ```
 
 ## Problem 1
 
-First, we need to read and clean the data. 
-
-We want to retain line, station name, station latitude / longitude, route served, entry, vending, entrance type, and ADA compliance. 
+First, we need to import the dataframe. 
 
 ```{r}
-#nyc_transit <- 
-  #read_csv("data/NYC_transit_data.csv") %>% 
-  #janitor::clean_names()
+nyc_transit_df <- 
+  read_csv(
+    'data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv',
+    col_types = cols(Route8 = "c", Route9 = "c", Route10 = "c", Route11 = "c")) %>%  
+  janitor::clean_names() %>% 
+  select(
+    line, station_name, station_latitude, station_longitude, 
+    starts_with("route"), entrance_type, entry, vending, ada) %>%  
+  mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
 ```
-
-We also need to convert the `entry` variable from character to logical variable using `ifelse` or `recode`. 
-
-```{r}
-
-```
-
 
 ##### Summary of Dataset:
 
+Above, we imported the `NYC_Transit_Subway_Entrance_And_Exit_Data.csv` data which has 1868 rows (observations) and 20 columns (variables). We also converted `route` variables 8-11 to character types to be consistent with 1-7. Additionally, we retained the following variables: line, station name, station latitude / longitude, route served, entry, vending, entrance type, and ADA compliance. We also updated `entry` from being a character with `YES` and `NO` values to a logical vector. 
+
+Although clean, the dataframe is not 'tidy'. Two new variables - `route_name` and `route_number` - need to be created to manipulate the `route` variables from wide to long format. This can be used to answer questions related to specific routes, but it may not be helpful for answering questions that focus on station-level variables as it'll repeat observations.
 
 ##### *Q1.1: How many distinct stations are there?*
+To determine the number of distinct stations, we can select station name and line using the `distinct()` function. The number of rows in the dataset equals the number of unique stations. 
+
+```{r}
+unique_stations <- nyc_transit_df %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+According to the chunk code above, there are **465 unique stations**. 
 
 ##### *Q1.2: How many stations are ADA compliant?*
 
-##### *Q1.3: What proportion of station entrances / exits without vending allow entrance?*
-
-
-Next, we will reformat the data so that `route_number` and `route_name` are distinct variables. 
+To determine the number of stations that are ADA compliant, we can filter on the `ada` variable using `filter()`. 
 
 ```{r}
-
+ada_compliant <- nyc_transit_df %>% 
+  filter(ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
 ```
 
+According to the chunk code above, there are **84 stations that are ADA compliant**. 
+
+##### *Q1.3: What proportion of station entrances / exits without vending allow entrance?*
+
+```{r}
+entrance_wo_vending <- nyc_transit_df %>% 
+  filter(vending == "NO") %>% 
+  pull(entry) %>% 
+  mean
+```
+
+Here, we filtered on `vending == NO` and extracted a single column (here, `entry`). Taking the mean of a logical variable provides the proportion of entrances to exits which is **0.377**. 
+
 ##### *Q1.4: How many distinct stations serve the A train? Of the stations that serve the A train, how many are ADA compliant?*
+
+Next, we will reformat the data so that `route_number` and `route_name` are distinct variables. In tidying the data using `pivot_longer`, we are able to reformat the data from wide to long, which allows us to answer route specific questions as noted earlier. 
+
+```{r}
+transit_A_ada <- nyc_transit_df %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_number",
+    values_to = "route_name") %>% 
+  filter(route_name == "A", ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
+```
+
+In this chunk, we are pivoting the data and creating `route_number` and `route_name`, then filtering to choose the A train and ADA compliant stations. We then use the chunk code that we've used in previous questions to pull the distinct station names. There are **17 stations that serve the A train and are ADA compliant**. 
+
+
+## Problem 2
+
 
 
