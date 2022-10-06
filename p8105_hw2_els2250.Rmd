@@ -43,6 +43,8 @@ To determine the number of distinct stations, we can select station name and lin
 unique_stations <- nyc_transit_df %>% 
   select(station_name, line) %>% 
   distinct
+
+unique_stations
 ```
 
 According to the chunk code above, there are **465 unique stations**. 
@@ -56,6 +58,8 @@ ada_compliant <- nyc_transit_df %>%
   filter(ada == TRUE) %>% 
   select(station_name, line) %>% 
   distinct
+
+ada_compliant
 ```
 
 According to the chunk code above, there are **84 stations that are ADA compliant**. 
@@ -67,6 +71,8 @@ entrance_wo_vending <- nyc_transit_df %>%
   filter(vending == "NO") %>% 
   pull(entry) %>% 
   mean
+
+entrance_wo_vending
 ```
 
 Here, we filtered on `vending == NO` and extracted a single column (here, `entry`). Taking the mean of a logical variable allows us to determine the proportion of entrances to exits, and we discover that **37.7% of station entrances/exits without vending allow entrance**. 
@@ -85,6 +91,8 @@ transit_A <- nyc_transit_df %>%
   select(station_name, line) %>% 
   distinct
 
+transit_A
+
 transit_A_ada <- nyc_transit_df %>% 
   pivot_longer(
     route1:route11,
@@ -93,6 +101,8 @@ transit_A_ada <- nyc_transit_df %>%
   filter(route_name == "A", ada == TRUE) %>% 
   select(station_name, line) %>% 
   distinct
+
+transit_A_ada
 ```
 
 In this chunk, we are pivoting the data and creating `route_number` and `route_name`, then filtering to choose the A train and ADA compliant stations. We then use the chunk code that we've used in previous questions to pull the distinct station names. There are **60 distinct stations that serve the A train**. Of those 60 stations, there are **17 stations that serve the A train and are ADA compliant**. 
@@ -266,7 +276,7 @@ tidy_pols_snp <- full_join(national_pols, snp_stock_market, by = c("year", "mont
 tidy_pols_snp_unemp <- full_join(tidy_pols_snp, unemployment, by = c("year", "month"))
 ```
 
-NOTE: Here, I decided to use `full_join` since I know that the number of variables and the number of observations do not match in each data set. To avoid losing any data, I decided to merge all information based on `year` and `month`. 
+NOTE: Here, I decided to use `full_join` since I know that the number of variables and the number of observations do not match in each data set. To avoid losing any data, I decided to merge all information based on `year` and `month`. You can also do `left_join` to achieve the same outcome with this specific data. 
 
 #### Summary of Dataset(s):
 The `national_pols` data set consists of **`r nrow(national_pols)` observations** of **`r ncol(national_pols)` variables**. This data set detailed the months (`month`) and years (`year`) corresponding to the number of Democrat and Republican governors (`gov_dem` and `gov_rep`, respectively), senators (`sen_dem` and `sen_gop`, respectively), and representatives (`rep_dem` and `rep_gop`, respectively). A variable describing the political party of the president (`president`) was also included. Considering the `year` variable, the data set ranged from **`r min(national_pols$year)` to `r max(national_pols$year)`**. 
