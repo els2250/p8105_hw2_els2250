@@ -76,6 +76,15 @@ Here, we filtered on `vending == NO` and extracted a single column (here, `entry
 Next, we will reformat the data so that `route_number` and `route_name` are distinct variables. In tidying the data using `pivot_longer`, we are able to reformat the data from wide to long, which allows us to answer route specific questions as noted earlier. 
 
 ```{r}
+transit_A <- nyc_transit_df %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_number",
+    values_to = "route_name") %>% 
+  filter(route_name == "A") %>% 
+  select(station_name, line) %>% 
+  distinct
+
 transit_A_ada <- nyc_transit_df %>% 
   pivot_longer(
     route1:route11,
@@ -86,7 +95,7 @@ transit_A_ada <- nyc_transit_df %>%
   distinct
 ```
 
-In this chunk, we are pivoting the data and creating `route_number` and `route_name`, then filtering to choose the A train and ADA compliant stations. We then use the chunk code that we've used in previous questions to pull the distinct station names. There are **17 stations that serve the A train and are ADA compliant**. 
+In this chunk, we are pivoting the data and creating `route_number` and `route_name`, then filtering to choose the A train and ADA compliant stations. We then use the chunk code that we've used in previous questions to pull the distinct station names. There are **60 distinct stations that serve the A train**. Of those 60 stations, there are **17 stations that serve the A train and are ADA compliant**. 
 
 
 ## Problem 2
@@ -203,7 +212,8 @@ Next, we will import and clean snp.csv using a similar process as above...
 ```{r}
 snp_stock_market <- read_csv('data/fivethirtyeight_datasets/snp.csv') %>% 
   janitor::clean_names() %>% 
-  mutate(date = as.Date(date, "%m/%d/%y")) %>% 
+  mutate(date = as.Date(date, "%m/%d/%y"),
+         date = if_else(date > "2015-07-01", format(date, "19%y-%m-%d"), format(date))) %>% 
   separate(col = date, into = c('year', 'month', 'day'), sep = '-') %>% 
   mutate(month = recode(month,
                         '01' = 'January',
