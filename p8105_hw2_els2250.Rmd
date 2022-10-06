@@ -134,18 +134,20 @@ trash_wheel_tidy <-
 
 The `Mr. Trash Wheel` dataset consisted of `r nrow(mr_trash_wheel)` observations of `r ncol(mr_trash_wheel)` variables, while the `Professor Trash Wheel` dataset consisted of `r nrow(prof_trash_wheel)` observations of `r ncol(prof_trash_wheel)` variables. Combining these two datasets, the `trash_wheel_tidy` dataset consists of `r nrow(trash_wheel_tidy)` observations of `r ncol(trash_wheel_tidy)` variables. Generally, the dataset details dumpster number, date of collection, amount of total litter, and litter type. Key variables include:
 
-* Dates garbage was collected (range = May 2014 to July 2022)
-* Weight of garbage collected in tons (total sum = `r sum(trash_wheel_tidy$weight_tons)` tons)
-* Volume of garbage collected in cubic yards (total sum = `r sum(trash_wheel_tidy$volume_cubic_yards)` cubic yards)
-* Different types of litter collected, such as:
-    * Plastic bottles (total sum = `r sum(trash_wheel_tidy$plastic_bottles)`)
-    * Polystyrene (total sum = `r sum(trash_wheel_tidy$polystyrene)`)
-    * Cigarette butts (total sum = `r sum(trash_wheel_tidy$cigarette_butts)`)
-    * Glass bottles (total sum = `r sum(trash_wheel_tidy$glass_bottles)`)
-    * Grocery bags (total sum = `r sum(trash_wheel_tidy$grocery_bags)`)
-    * Chip bags (total sum = `r sum(trash_wheel_tidy$chip_bags)`)
-    * Sports balls (total sum = `r sum(trash_wheel_tidy$sports_balls, na.rm = TRUE)`)
-* Homes powered from collected garbage (total = `r sum(trash_wheel_tidy$homes_powered, na.rm = TRUE)` homes)
+* `dumpster`: Integer variable depicting the dumpster number (range = 1-547 for Mr. Trash Wheel and 1-94 for Professor Trash Wheel)
+* `date`: Datetime variable describing the dates garbage was collected (range = May 2014 to July 2022)
+* `weight_tons`: Integer variable describing the weight of garbage collected in tons (total sum = `r sum(trash_wheel_tidy$weight_tons)` tons)
+* `volume_cubic_yards`: Integer variable describing the volume of garbage collected in cubic yards (total sum = `r sum(trash_wheel_tidy$volume_cubic_yards)` cubic yards)
+* Integer variables describing the different types of litter collected, such as:
+    * `plastic_bottles`: Plastic bottles (total sum = `r sum(trash_wheel_tidy$plastic_bottles)`)
+    * `polystyrene`: Polystyrene (total sum = `r sum(trash_wheel_tidy$polystyrene)`)
+    * `cigarette_butts`: Cigarette butts (total sum = `r sum(trash_wheel_tidy$cigarette_butts)`)
+    * `glass_bottles`: Glass bottles (total sum = `r sum(trash_wheel_tidy$glass_bottles)`)
+    * `grocery_bags`: Grocery bags (total sum = `r sum(trash_wheel_tidy$grocery_bags)`)
+    * `chip_bags`: Chip bags (total sum = `r sum(trash_wheel_tidy$chip_bags)`)
+    * `sports_balls`: Sports balls (total sum = `r sum(trash_wheel_tidy$sports_balls, na.rm = TRUE)`)
+* `homes_powered`: Integer variable describing the number of homes powered from collected garbage (total = `r sum(trash_wheel_tidy$homes_powered, na.rm = TRUE)` homes)
+* `trash_program`: Character variable describing which water-wheel vessel was removing the litter (`Mr. Trash Wheel` or `Professor Trash Wheel`)
     
 
 #### *Q2.1: What was the total weight of trash collected by Professor Trash Wheel?*
@@ -171,6 +173,88 @@ Mr. Trash Wheel collected **856 sports balls** in 2020.
 
 ## Problem 3
 
+The goal of this problem is to merge `pols-month.csv`, `unemployment.csv`, and `snp.csv` into a singe data frame using year and month as keys across datasets. 
+
+To start, we need to import and clean pols-month.csv...
+
+```{r}
+national_politians <- read_csv('data/fivethirtyeight_datasets/pols-month.csv') %>% 
+  janitor::clean_names() %>% 
+  separate(col = mon, into = c('year', 'month', 'day'), sep = '-') %>% 
+  mutate(month = recode(month,
+                        '01' = 'January',
+                        '02' = 'February',
+                        '03' = 'March',
+                        '04' = 'April',
+                        '05' = 'May',
+                        '06' = 'June',
+                        '07' = 'July',
+                        '08' = 'August',
+                        '09' = 'September',
+                        '10' = 'October',
+                        '11' = 'November',
+                        '12' = 'December'),
+         president = ifelse(prez_gop == 1, "gop", ifelse(prez_dem == 1, "dem", NA))) %>% 
+  select(-c(prez_dem, prez_gop, day))
+```
+
+Next, we will import and clean snp.csv using a similar process as above...
+
+```{r}
+snp_stock_market <- read_csv('data/fivethirtyeight_datasets/snp.csv') %>% 
+  janitor::clean_names() %>% 
+  mutate(date = as.Date(date, "%m/%d/%y")) %>% 
+  separate(col = date, into = c('year', 'month', 'day'), sep = '-') %>% 
+  mutate(month = recode(month,
+                        '01' = 'January',
+                        '02' = 'February',
+                        '03' = 'March',
+                        '04' = 'April',
+                        '05' = 'May',
+                        '06' = 'June',
+                        '07' = 'July',
+                        '08' = 'August',
+                        '09' = 'September',
+                        '10' = 'October',
+                        '11' = 'November',
+                        '12' = 'December')) %>% 
+  arrange(year, factor(month, levels = month.name)) %>% 
+  select(-day)
+```
+
+Next, we will import and clean the unemployment.csv data...
+
+```{r}
+unemployment <- read_csv('data/fivethirtyeight_datasets/unemployment.csv') %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    jan:dec,
+    names_to = "month",
+    values_to = "percent"
+  ) %>% 
+  mutate(month = recode(month,
+                        'jan' = 'January',
+                        'feb' = 'February',
+                        'mar' = 'March',
+                        'apr' = 'April',
+                        'may' = 'May',
+                        'jun' = 'June',
+                        'jul' = 'July',
+                        'aug' = 'August',
+                        'sep' = 'September',
+                        'oct' = 'October',
+                        'nov' = 'November',
+                        'dec' = 'December'),
+         year = as.character(year))
+```
 
 
+Finally, we will merge all three datasets matching month and year, starting with `national_politians` and `snp_stock_market`, then adding `unemployment` to the result of that merge. 
+
+```{r}
+
+```
+
+
+#### Summary of Dataset(s)
 
