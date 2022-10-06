@@ -30,13 +30,13 @@ nyc_transit_df <-
   mutate(entry = ifelse(entry == "YES", TRUE, FALSE))
 ```
 
-##### Summary of Dataset:
+#### Summary of Dataset:
 
 Above, we imported the `NYC_Transit_Subway_Entrance_And_Exit_Data.csv` data which has 1868 rows (observations) and 20 columns (variables). We also converted `route` variables 8-11 to character types to be consistent with 1-7. Additionally, we retained the following variables: line, station name, station latitude / longitude, route served, entry, vending, entrance type, and ADA compliance. We also updated `entry` from being a character with `YES` and `NO` values to a logical vector. 
 
 Although clean, the dataframe is not 'tidy'. Two new variables - `route_name` and `route_number` - need to be created to manipulate the `route` variables from wide to long format. This can be used to answer questions related to specific routes, but it may not be helpful for answering questions that focus on station-level variables as it'll repeat observations.
 
-##### *Q1.1: How many distinct stations are there?*
+#### *Q1.1: How many distinct stations are there?*
 To determine the number of distinct stations, we can select station name and line using the `distinct()` function. The number of rows in the dataset equals the number of unique stations. 
 
 ```{r}
@@ -47,7 +47,7 @@ unique_stations <- nyc_transit_df %>%
 
 According to the chunk code above, there are **465 unique stations**. 
 
-##### *Q1.2: How many stations are ADA compliant?*
+#### *Q1.2: How many stations are ADA compliant?*
 
 To determine the number of stations that are ADA compliant, we can filter on the `ada` variable using `filter()`. 
 
@@ -60,7 +60,7 @@ ada_compliant <- nyc_transit_df %>%
 
 According to the chunk code above, there are **84 stations that are ADA compliant**. 
 
-##### *Q1.3: What proportion of station entrances / exits without vending allow entrance?*
+#### *Q1.3: What proportion of station entrances / exits without vending allow entrance?*
 
 ```{r}
 entrance_wo_vending <- nyc_transit_df %>% 
@@ -71,7 +71,7 @@ entrance_wo_vending <- nyc_transit_df %>%
 
 Here, we filtered on `vending == NO` and extracted a single column (here, `entry`). Taking the mean of a logical variable allows us to determine the proportion of entrances to exits, and we discover that **37.7% of station entrances/exits without vending allow entrance**. 
 
-##### *Q1.4: How many distinct stations serve the A train? Of the stations that serve the A train, how many are ADA compliant?*
+#### *Q1.4: How many distinct stations serve the A train? Of the stations that serve the A train, how many are ADA compliant?*
 
 Next, we will reformat the data so that `route_number` and `route_name` are distinct variables. In tidying the data using `pivot_longer`, we are able to reformat the data from wide to long, which allows us to answer route specific questions as noted earlier. 
 
@@ -96,12 +96,81 @@ The goal of this problem is to import, clean, and organize two datasets (`Mr. Tr
 We will start with importing, cleaning, and organizing `Mr. Trash Wheel`...
 
 ```{r}
-mr_trashwheel <- 
+mr_trash_wheel <- 
   read_excel("data/Trash_Wheel_Collection_Data.xlsx", 
                             sheet = "Mr. Trash Wheel", 
                             range = "A2:N549") %>% 
   janitor::clean_names() %>% 
-  mutate(sports_balls = round(sports_balls, digits = 0))
+  mutate(sports_balls = as.integer(sports_balls),
+         trash_program = "Mr. Trash Wheel",
+         year = as.character(year)) %>% 
+  filter(!is.na(dumpster))
 ```
+
+Note: We used `as.integer` to round `sports_balls`, but we could also use the `round` function and code `digits = 0` to achieve the same outcome. 
+
+
+Next, we will import, clean, and organize `Professor Trash Wheel`...
+
+```{r}
+prof_trash_wheel <- 
+  read_excel("data/Trash_Wheel_Collection_Data.xlsx", 
+                            sheet = "Professor Trash Wheel", 
+                            range = "A2:M96") %>% 
+  janitor::clean_names() %>% 
+  mutate(trash_program = "Professor Trash Wheel",
+         year = as.character(year)) %>% 
+  filter(!is.na(dumpster))
+```
+
+Now that both datasets are clean and organized, we will join them using `rbind()`...
+
+```{r}
+trash_wheel_tidy <-
+  bind_rows(mr_trash_wheel, prof_trash_wheel)
+```
+
+#### Summary of Dataset:
+
+The `Mr. Trash Wheel` dataset consisted of `r nrow(mr_trash_wheel)` observations of `r ncol(mr_trash_wheel)` variables, while the `Professor Trash Wheel` dataset consisted of `r nrow(prof_trash_wheel)` observations of `r ncol(prof_trash_wheel)` variables. Combining these two datasets, the `trash_wheel_tidy` dataset consists of `r nrow(trash_wheel_tidy)` observations of `r ncol(trash_wheel_tidy)` variables. Generally, the dataset details dumpster number, date of collection, amount of total litter, and litter type. Key variables include:
+
+* Dates garbage was collected (range = May 2014 to July 2022)
+* Weight of garbage collected in tons (total sum = `r sum(trash_wheel_tidy$weight_tons)` tons)
+* Volume of garbage collected in cubic yards (total sum = `r sum(trash_wheel_tidy$volume_cubic_yards)` cubic yards)
+* Different types of litter collected, such as:
+    * Plastic bottles (total sum = `r sum(trash_wheel_tidy$plastic_bottles)`)
+    * Polystyrene (total sum = `r sum(trash_wheel_tidy$polystyrene)`)
+    * Cigarette butts (total sum = `r sum(trash_wheel_tidy$cigarette_butts)`)
+    * Glass bottles (total sum = `r sum(trash_wheel_tidy$glass_bottles)`)
+    * Grocery bags (total sum = `r sum(trash_wheel_tidy$grocery_bags)`)
+    * Chip bags (total sum = `r sum(trash_wheel_tidy$chip_bags)`)
+    * Sports balls (total sum = `r sum(trash_wheel_tidy$sports_balls, na.rm = TRUE)`)
+* Homes powered from collected garbage (total = `r sum(trash_wheel_tidy$homes_powered, na.rm = TRUE)` homes)
+    
+
+#### *Q2.1: What was the total weight of trash collected by Professor Trash Wheel?*
+
+```{r}
+trash_wheel_tidy %>% 
+  filter(trash_program == "Professor Trash Wheel") %>% 
+  summarise(sum(weight_tons), na.rm = TRUE)
+```
+
+The total weight collected by `Professor Trash Wheel` was **around 190 tons**.
+
+#### *Q2.2: What was the total number of sports balls collected by Mr. Trash Wheel in 2020?*
+
+```{r}
+trash_wheel_tidy %>% 
+  filter(trash_program == "Mr. Trash Wheel", year == "2020") %>% 
+  summarise(sum(sports_balls), na.rm = TRUE)
+```
+
+Mr. Trash Wheel collected **856 sports balls** in 2020. 
+
+
+## Problem 3
+
+
 
 
